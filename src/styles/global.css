@@ -2,7 +2,102 @@
   color-scheme: dark;
 }
 
+html,
+body {
+  height: 100%;
+}
+
 body {
   margin: 0;
+  overflow: hidden;
   font-family: system-ui, sans-serif;
+  background: #0b0812;
+  color: #f4f0ff;
+}
+
+nav[aria-label="Primary"] {
+  position: fixed;
+  z-index: 3;
+  top: 0.75rem;
+  left: 0.75rem;
+}
+
+nav[aria-label="Primary"] a {
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 8%);
+  color: rgb(244 240 255 / 70%);
+  font-size: 0.85rem;
+  text-decoration: none;
+}
+
+nav[aria-label="Primary"] a:hover {
+  background: rgb(255 255 255 / 16%);
+  color: #f4f0ff;
+}
+
+main {
+  position: relative;
+  inline-size: 100%;
+  block-size: 100vh;
+}
+
+.title {
+  position: fixed;
+  z-index: 3;
+  top: 0.75rem;
+  right: 0.75rem;
+  margin: 0;
+  color: rgb(244 240 255 / 45%);
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+#stage {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  display: block;
+
+  /* canvas is a replaced element, so position:fixed + inset:0 alone does not
+     stretch it to the viewport the way it would a div — it keeps its default
+     300x150 intrinsic box unless width/height are set explicitly. */
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+
+#overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  pointer-events: none;
+  text-align: center;
+  transition: opacity 0.6s ease;
+}
+
+#overlay p {
+  margin: 0;
+  font-size: clamp(1.1rem, 4vw, 1.6rem);
+  letter-spacing: 0.02em;
+}
+
+#overlay .sub {
+  color: rgb(244 240 255 / 55%);
+  font-size: clamp(0.9rem, 2.5vw, 1.1rem);
+}
+
+#overlay.is-hidden {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #overlay {
+    transition: none;
+  }
 }

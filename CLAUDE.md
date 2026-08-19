@@ -53,6 +53,20 @@ debugging the same thing again.
   `base: "/comp4020-crit4-Alisonsun7/"` in `astro.config.mjs`. Get it wrong and
   the site looks perfect locally while every asset 404s on the live URL. Commit
   the updated `pnpm-lock.yaml` too --- CI installs with `--frozen-lockfile`.
+- **An `AudioContext` built before a user gesture is born suspended.** Build it
+  lazily *inside* the first keydown or pointerdown handler, not at module load,
+  or the first press only unlocks audio and makes no sound. For this crit that
+  is the whole game: "where does the first sound come from" is the first thing
+  the pod judges.
+- **`--headless` is the old headless mode and paints phantoms.** It drew a
+  ~300×150 grey rectangle over the top-left of a canvas page, which reads
+  exactly like a stale-canvas bug; I rewrote working code chasing it. Always
+  pass `--headless=new`. If an artifact appears only in a screenshot, reproduce
+  it in a real window before believing it.
+- **Measure a canvas with a `ResizeObserver`, not a `resize` listener.** A
+  `resize` listener measures once before layout has settled and then never
+  again, so every frame draws into a stale box and the bug looks like bad
+  rendering rather than bad measurement.
 - **Headless Chrome on macOS will not give you a viewport narrower than
   ~500px.** `--window-size=390,N` produces a 390px-wide *image* of a ~500px-wide
   *layout*, cropped --- which looks exactly like horizontal overflow and is not.
