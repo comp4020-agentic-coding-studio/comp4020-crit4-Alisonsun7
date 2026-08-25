@@ -20,9 +20,12 @@ All sound is generated live in the page. There are no recorded audio files in
 the shipped build: the voices are oscillators and filtered noise, and the room
 sound is a generated impulse response. The canvas draws the typed notes as a
 score, with pitch on the vertical axis and time moving across the screen, so a
-word leaves a visible line as well as a sound. The opening screen says "touch,
-click, drag, or type" and disappears after the first gesture, which makes the
-first sound the first thing the page invites.
+word leaves a visible line as well as a sound. Dragging draws on that same
+score: a ribbon at the height of the pitch it is playing, so holding a note
+draws a level band and sliding draws a step, and the ribbon stays on the stage
+after the pointer is released instead of disappearing with the gesture. The
+opening screen says "touch, click, drag, or type" and disappears after the first
+gesture, which makes the first sound the first thing the page invites.
 
 ## How I checked the brief
 
@@ -135,27 +138,52 @@ Cited: [`529ac82`](https://github.com/comp4020-agentic-coding-studio/comp4020-cr
 - the drag voice rebuilt, the scale snapping added to tuning, and the test that
 holds the new rule.
 
-### 6. Updating the written account after the design changed
+### 6. Closing the gap my own written account had admitted
+
+Writing the process overview made me name what was still weak, and once it was
+written down it was hard to leave alone. I had said the site was strongest on
+keyboard play, because typing left a readable phrase on the score while dragging
+left only a glow that died with the gesture. So the next thing I asked for was
+the thing my own document had identified: a persistent ribbon for drag and
+touch.
+
+Two decisions in that change were mine rather than the agent's. The first was
+which coordinate system the ribbon belongs to. Drag pitch comes from the
+pointer's horizontal position, but the score's horizontal axis is time, so
+drawing at the pointer would have put the ribbon in a different space from every
+note beside it. It had to be drawn in score space instead: vertical position for
+the snapped pitch, horizontal position for time. The second was that the ribbon
+has to be sampled by the drawing loop rather than by pointer movement, because
+holding still is also playing. A movement-driven trail stops recording at
+exactly the moment a note is being held.
+
+Cited: [`0f62eea`](https://github.com/comp4020-agentic-coding-studio/comp4020-crit4-Alisonsun7/commit/0f62eea)
+- the drag ribbon added to the stage, drawn under the note marks so typed
+letters stay readable.
+
+### 7. Updating the written account after the design changed
 
 The documentation was updated after the drag fix rather than left describing the
-older instrument. This matters because the process overview should account for
-the current prototype, not a previous version that happened to pass earlier
-checks. The final process and reflection now treat listening as part of the
-method, not as a final polish step.
+older instrument, and updated again after the ribbon. This matters because the
+process overview should account for the current prototype, not a previous
+version that happened to pass earlier checks. The final process and reflection
+now treat listening and looking as part of the method, not as a final polish
+step.
 
 Cited: [`61936a1`](https://github.com/comp4020-agentic-coding-studio/comp4020-crit4-Alisonsun7/commit/61936a1)
 - the process and reflection updated after the drag correction.
 
 ## What is still open
 
-The site is strongest on keyboard play. The next improvement I would make for a
-high-distinction crit is visual parity for drag and touch: the drag voice should
-leave a faint path or ribbon after the pointer is released, not only a temporary
-glow while it is moving. That would make pointer play as legible to the room as
-typed words already are.
+The open item now is human testing. I have played the current build myself, and
+that is what found both the drag problem and the missing visual record, but I
+have not yet watched another person arrive cold and discover it without help.
+The crit format makes that visible, so I would treat the first thirty seconds of
+someone else's play as the final test rather than something I can fake with
+another automated check.
 
-The other open item is human testing. I have played the current build myself,
-and that is what found the drag problem, but I have not yet watched another
-person arrive cold and discover it without help. The crit format makes that
-visible, so I would treat the first thirty seconds of someone else's play as
-the final test rather than something I can fake with another automated check.
+The specific thing I would watch for is whether a stranger discovers dragging at
+all. Typing is the obvious invitation, and now that pointer play leaves the same
+kind of visible record as typing, the question is whether anyone gets far enough
+to see it. That is a discoverability problem rather than an audio or a drawing
+problem, and it is not one I can answer by playing my own build.

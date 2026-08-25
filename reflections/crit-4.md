@@ -47,6 +47,23 @@ had discovered by listening. That is the strongest example from this Crit of my
 role in the process: the agent could build and test the audio graph, but it
 could not be the ear that decided whether the instrument felt right.
 
+D. The fourth breakthrough was smaller but it changed how I think about writing
+documentation. While writing the process overview I had to name what was still
+weak, and what I wrote was that the site was strongest on keyboard play: typing
+left a readable phrase on the score, while dragging left only a glow that
+disappeared as soon as the pointer was released. Once that was written down I
+did not want to submit it as an excuse, so I built the thing my own document had
+identified — a ribbon that stays on the score after the gesture ends.
+
+What I learned there was that the honest version of a process document is not
+just a record. It is a way of finding the next task, because stating a weakness
+precisely enough to write it down usually means you already understand it well
+enough to fix it. The part I had to decide myself was where the ribbon belongs:
+drag pitch comes from the pointer's horizontal position, but the score's
+horizontal axis is time, so the ribbon had to be drawn in the score's
+coordinates rather than at the pointer, or pointer play would have been drawn in
+a different space from every typed note beside it.
+
 **What did this work change about who I want to be as a software developer?**
 
 In Crit 1 I was still getting comfortable with letting Claude inspect and modify
@@ -70,8 +87,9 @@ stay responsible for authorship, taste, and verification. The moments that
 mattered most this week were not the moments where Claude produced the largest
 amount of code. They were the moments where I corrected the direction: refusing
 to copy reference sites, asking for the tuning to be redesigned instead of
-debugged, making sure I was judging the latest build, and trusting my ear when
-the drag felt wrong.
+debugged, making sure I was judging the latest build, trusting my ear when the
+drag felt wrong, and then acting on the weakness my own process document had
+named instead of shipping it as a caveat.
 
 So the developer I want to become is one who treats a green check as the start
 of verification, not the end. I still want strong tests, but I also want to be
