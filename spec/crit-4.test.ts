@@ -9,6 +9,7 @@ import {
   midiForLetter,
   phraseFor,
   pitchRange,
+  snapToScale,
   voiceForLetter,
 } from "../src/scripts/tuning.ts";
 
@@ -59,6 +60,24 @@ describe("spec: there is no way to play it wrong", () => {
 
   it("rests on whitespace, so a space between words is heard as phrasing", () => {
     expect(phraseFor("a b").map((event) => event.kind)).toEqual(["note", "rest", "note"]);
+  });
+
+  it("snaps a drag onto the scale, so sliding cannot land between two notes", () => {
+    // Playing the finished build is what found this: the drag was continuous,
+    // which sounds fine alone and beats against a typed letter. The keys were
+    // never the problem, so the fix belongs to the whole instrument.
+    const { lowest, highest } = pitchRange();
+    for (let step = 0; step <= 200; step += 1) {
+      const anywhere = lowest + (step / 200) * (highest - lowest);
+      const midi = snapToScale(anywhere);
+      const semitone = (((midi - ROOT_MIDI) % 12) + 12) % 12;
+      expect(
+        MINOR_PENTATONIC,
+        `dragging to ${anywhere.toFixed(2)} snapped to midi ${midi}, outside the scale`,
+      ).toContain(semitone);
+      expect(midi).toBeGreaterThanOrEqual(lowest);
+      expect(midi).toBeLessThanOrEqual(highest);
+    }
   });
 });
 

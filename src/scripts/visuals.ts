@@ -19,6 +19,13 @@ function speedFor(width: number): number {
   return Math.min(300, Math.max(120, width / 6));
 }
 
+// Shared with the audio graph so a dragged pitch is coloured the same way a
+// typed one is: violet in the low register, amber at the top.
+export function hueForMidi(midi: number): number {
+  const position = (midi - lowest) / (highest - lowest);
+  return 268 - position * 228;
+}
+
 type Mark = {
   spawnX: number;
   y: number;
@@ -67,11 +74,6 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
   function yForMidi(midi: number): number {
     const position = (midi - lowest) / (highest - lowest);
     return height * (0.82 - position * 0.62);
-  }
-
-  function hueForMidi(midi: number): number {
-    const position = (midi - lowest) / (highest - lowest);
-    return 268 - position * 228; // violet in the low register, amber at the top
   }
 
   // Scrolling, the mark's age carries it leftward, so time reads left to right.

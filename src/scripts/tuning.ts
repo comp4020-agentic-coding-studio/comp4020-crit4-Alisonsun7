@@ -46,6 +46,38 @@ export function pitchRange(): { lowest: number; highest: number } {
   };
 }
 
+// The scale the two ladders are drawn from, stated as a rule rather than a list.
+const ROOT = VOWEL_LADDER[0];
+const MINOR_PENTATONIC = [0, 3, 5, 7, 10];
+
+export function scalePitches(): number[] {
+  const { lowest, highest } = pitchRange();
+  const pitches: number[] = [];
+  for (let octave = 0; ; octave += 1) {
+    const base = ROOT + octave * 12;
+    if (base > highest) break;
+    for (const offset of MINOR_PENTATONIC) {
+      const midi = base + offset;
+      if (midi >= lowest && midi <= highest) pitches.push(midi);
+    }
+  }
+  return pitches.sort((a, b) => a - b);
+}
+
+// Dragging was the one place a player could land between notes. A continuous
+// pitch has nothing to miss when you hear it alone, but against a typed letter
+// it sits in the crack and beats. Snapping the drag onto the same scale keeps
+// "no wrong notes" true of the whole instrument rather than only of the keys —
+// the glide back in the audio graph is what preserves the sliding feel.
+export function snapToScale(midi: number): number {
+  const pitches = scalePitches();
+  let nearest = pitches[0];
+  for (const pitch of pitches) {
+    if (Math.abs(pitch - midi) < Math.abs(nearest - midi)) nearest = pitch;
+  }
+  return nearest;
+}
+
 export function frequencyForMidi(midi: number): number {
   return 440 * 2 ** ((midi - 69) / 12);
 }

@@ -2,8 +2,8 @@
 // filtered noise built at press time, and even the room is a noise burst shaped
 // into an impulse response. That is the spec's "the browser is the instrument".
 
-import { createStage } from "./visuals.ts";
-import { eventForKey, frequencyForMidi, pitchRange } from "./tuning.ts";
+import { createStage, hueForMidi } from "./visuals.ts";
+import { eventForKey, frequencyForMidi, pitchRange, snapToScale } from "./tuning.ts";
 
 const canvas = document.querySelector<HTMLCanvasElement>("canvas#stage");
 const overlay = document.querySelector<HTMLElement>("#overlay");
@@ -144,70 +144,113 @@ function playNote(letter: string, midi: number, sustained: boolean): void {
   reveal();
 }
 
-// The drag voice. Continuous rather than quantised: with no target pitch there
-// is nothing to miss, so sliding is expressive instead of out of tune.
-type Drag = { osc: OscillatorNode; sub: OscillatorNode; gain: GainNode; filter: BiquadFilterNode };
+// The drag voice. This was the one part that sounded wrong when the finished
+// build was actually played: a sawtooth through a resonant filter, sliding
+// through continuous pitch, against keys that are soft and strictly in scale.
+// Three things were fixed together, because the fault was the mismatch rather
+// than any one setting — same waveform family as the keys, no resonant peak,
+// and the same scale, with a fast glide so it still slides rather than steps.
+type Drag = {
+  osc: OscillatorNode;
+  partial: OscillatorNode;
+  sub: OscillatorNode;
+  gain: GainNode;
+  filter: BiquadFilterNode;
+  vibrato: OscillatorNode;
+  midi: number;
+};
 let drag: Drag | null = null;
 
 function midiForX(x: number): number {
   const position = Math.min(Math.max((x / window.innerWidth - 0.12) / 0.76, 0), 1);
-  return lowest + position * (highest - lowest);
+  return snapToScale(lowest + position * (highest - lowest));
 }
 
 function startDrag(x: number): void {
   const context = ensureAudio();
   if (drag) return;
   const now = context.currentTime;
+  const midi = midiForX(x);
+  const frequency = frequencyForMidi(midi);
 
   const filter = context.createBiquadFilter();
   filter.type = "lowpass";
   filter.frequency.value = cutoffNow();
-  filter.Q.value = 3;
+  filter.Q.value = 0.7; // was 3, which whistled as the pointer swept the cutoff
 
   const gain = context.createGain();
   gain.gain.setValueAtTime(0.0001, now);
-  gain.gain.linearRampToValueAtTime(0.16, now + 0.09);
+  // Quieter than the keys: a held note that never decays dominates a phrase.
+  gain.gain.linearRampToValueAtTime(0.11, now + 0.12);
 
+  // Triangle, not sawtooth. A sawtooth carries every harmonic, so it buzzed
+  // next to the keys' sine and triangle.
   const osc = context.createOscillator();
-  osc.type = "sawtooth";
-  osc.frequency.value = frequencyForMidi(midiForX(x));
+  osc.type = "triangle";
+  osc.frequency.value = frequency;
+
+  const partial = context.createOscillator();
+  partial.type = "sine";
+  partial.frequency.value = frequency * 2.002; // the keys' shimmer, kept here
+  const partialGain = context.createGain();
+  partialGain.gain.value = 0.22;
 
   const sub = context.createOscillator();
   sub.type = "sine";
-  sub.frequency.value = osc.frequency.value / 2;
+  sub.frequency.value = frequency / 2;
   const subGain = context.createGain();
-  subGain.gain.value = 0.45;
+  subGain.gain.value = 0.3;
+
+  // A held tone with no movement in it reads as a test tone rather than a
+  // voice, so a slow shallow vibrato rides the pitch.
+  const vibrato = context.createOscillator();
+  vibrato.type = "sine";
+  vibrato.frequency.value = 4.8;
+  const vibratoDepth = context.createGain();
+  vibratoDepth.gain.value = 4; // cents-ish, via detune
+  vibrato.connect(vibratoDepth);
+  vibratoDepth.connect(osc.detune);
+  vibratoDepth.connect(partial.detune);
 
   osc.connect(filter);
+  partial.connect(partialGain).connect(filter);
   sub.connect(subGain).connect(filter);
   filter.connect(gain);
   gain.connect(master);
   gain.connect(reverbSend);
   osc.start(now);
+  partial.start(now);
   sub.start(now);
+  vibrato.start(now);
 
-  drag = { osc, sub, gain, filter };
+  drag = { osc, partial, sub, gain, filter, vibrato, midi };
   reveal();
 }
 
 function moveDrag(x: number): void {
   if (!audio || !drag) return;
-  const target = frequencyForMidi(midiForX(x));
-  // A short glide rather than a jump: this is the theremin's whole character.
-  drag.osc.frequency.setTargetAtTime(target, audio.currentTime, 0.05);
-  drag.sub.frequency.setTargetAtTime(target / 2, audio.currentTime, 0.05);
-  drag.filter.frequency.setTargetAtTime(cutoffNow(), audio.currentTime, 0.08);
+  const midi = midiForX(x);
+  const now = audio.currentTime;
+  // Snapped pitch means this only fires when the drag crosses into the next
+  // degree, and the glide is short enough to read as a slide rather than a lag.
+  if (midi !== drag.midi) {
+    const target = frequencyForMidi(midi);
+    drag.osc.frequency.setTargetAtTime(target, now, 0.025);
+    drag.partial.frequency.setTargetAtTime(target * 2.002, now, 0.025);
+    drag.sub.frequency.setTargetAtTime(target / 2, now, 0.025);
+    drag.midi = midi;
+  }
+  drag.filter.frequency.setTargetAtTime(cutoffNow(), now, 0.08);
 }
 
 function stopDrag(): void {
   if (!audio || !drag) return;
-  const { osc, sub, gain } = drag;
+  const { osc, partial, sub, gain, vibrato } = drag;
   const now = audio.currentTime;
   gain.gain.cancelScheduledValues(now);
   gain.gain.setValueAtTime(gain.gain.value, now);
   gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.28);
-  osc.stop(now + 0.32);
-  sub.stop(now + 0.32);
+  for (const source of [osc, partial, sub, vibrato]) source.stop(now + 0.32);
   drag = null;
 }
 
@@ -228,14 +271,24 @@ canvas.addEventListener("pointerdown", (event) => {
   canvas.setPointerCapture(event.pointerId);
   brightness = 1 - event.clientY / window.innerHeight;
   startDrag(event.clientX);
-  stage.setGlow({ x: event.clientX, y: event.clientY, hue: 200, active: true });
+  stage.setGlow({
+    x: event.clientX,
+    y: event.clientY,
+    hue: hueForMidi(midiForX(event.clientX)),
+    active: true,
+  });
 });
 
 canvas.addEventListener("pointermove", (event) => {
   brightness = 1 - event.clientY / window.innerHeight;
   if (!drag) return;
   moveDrag(event.clientX);
-  stage.setGlow({ x: event.clientX, y: event.clientY, hue: 200, active: true });
+  stage.setGlow({
+    x: event.clientX,
+    y: event.clientY,
+    hue: hueForMidi(midiForX(event.clientX)),
+    active: true,
+  });
 });
 
 for (const ending of ["pointerup", "pointercancel", "pointerleave"] as const) {
