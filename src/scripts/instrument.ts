@@ -271,6 +271,10 @@ canvas.addEventListener("pointerdown", (event) => {
   canvas.setPointerCapture(event.pointerId);
   brightness = 1 - event.clientY / window.innerHeight;
   startDrag(event.clientX);
+  // The glow says "a pointer is here"; the trace says "this is what you
+  // played". Typing left a readable phrase behind and dragging left nothing,
+  // so pointer play was the quieter half of the same instrument.
+  stage.setTrace(midiForX(event.clientX));
   stage.setGlow({
     x: event.clientX,
     y: event.clientY,
@@ -283,6 +287,7 @@ canvas.addEventListener("pointermove", (event) => {
   brightness = 1 - event.clientY / window.innerHeight;
   if (!drag) return;
   moveDrag(event.clientX);
+  stage.setTrace(midiForX(event.clientX));
   stage.setGlow({
     x: event.clientX,
     y: event.clientY,
@@ -294,6 +299,7 @@ canvas.addEventListener("pointermove", (event) => {
 for (const ending of ["pointerup", "pointercancel", "pointerleave"] as const) {
   canvas.addEventListener(ending, () => {
     stopDrag();
+    stage.setTrace(null);
     stage.setGlow(null);
   });
 }

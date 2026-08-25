@@ -38,9 +38,17 @@ type Mark = {
 
 type Glow = { x: number; y: number; hue: number; active: boolean };
 
+// A dragged pitch leaves a ribbon on the same score the typed notes land on:
+// y is pitch and x is time, so holding a note draws a level band and sliding
+// draws a step. Sampling in score space rather than at the pointer is the whole
+// point — the pointer's own x means pitch, and reusing it for the drawing would
+// put the ribbon in a different coordinate system from every note beside it.
+type TracePoint = { spawnX: number; y: number; born: number; hue: number };
+
 export type Stage = {
   addNote(letter: string, midi: number, sustained: boolean): void;
   setGlow(glow: Glow | null): void;
+  setTrace(midi: number | null): void;
 };
 
 // Narrowing a `| null` const doesn't reach inside the render closure, so the
@@ -55,6 +63,10 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
   const context = require2d(canvas);
   const stillness = window.matchMedia("(prefers-reduced-motion: reduce)");
   const marks: Mark[] = [];
+  const traces: TracePoint[][] = [];
+  let live: TracePoint[] | null = null;
+  let tracedMidi: number | null = null;
+  let sampled = 0;
   let glow: Glow | null = null;
   let width = 0;
   let height = 0;
@@ -78,9 +90,9 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
 
   // Scrolling, the mark's age carries it leftward, so time reads left to right.
   // Standing still, notes step across a fixed score instead of gliding.
-  function xAt(mark: Mark, now: number): number {
-    if (stillness.matches) return mark.spawnX;
-    return mark.spawnX - ((now - mark.born) / 1000) * speedFor(width);
+  function xAt(item: { spawnX: number; born: number }, now: number): number {
+    if (stillness.matches) return item.spawnX;
+    return item.spawnX - ((now - item.born) / 1000) * speedFor(width);
   }
 
   // Marks fade out as they reach the left edge rather than on a timer, so the
@@ -102,6 +114,65 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
     for (let index = marks.length - 1; index >= 0; index -= 1) {
       if (xAt(marks[index], now) < -60) marks.splice(index, 1);
     }
+
+    // Sampling happens here rather than in the pointer handler, because holding
+    // still is also playing: a pointermove-driven ribbon would stop recording
+    // the moment the hand stopped, which is exactly when a note is being held.
+    if (tracedMidi !== null && now - sampled > 24) {
+      if (!live) {
+        // Standing still nothing scrolls, so an old stroke would sit under the
+        // new one at the same x. One path at a time is the honest calm version.
+        if (calm) traces.length = 0;
+        live = [];
+        traces.push(live);
+      }
+      live.push({
+        spawnX: calm ? width * (0.1 + Math.min(live.length, 58) * 0.012) : width * 0.88,
+        y: yForMidi(tracedMidi),
+        born: now,
+        hue: hueForMidi(tracedMidi),
+      });
+      if (live.length > 320) live.shift();
+      sampled = now;
+    }
+
+    for (let index = traces.length - 1; index >= 0; index -= 1) {
+      const points = traces[index];
+      while (points.length && xAt(points[0], now) < -60) points.shift();
+      if (!points.length && points !== live) traces.splice(index, 1);
+    }
+    // Standing still nothing scrolls off, so the cap is what bounds the calm path.
+    while (traces.length > 6) traces.shift();
+
+    // Two strokes: a soft wide band for presence, a thin core for the line the
+    // eye follows. Both fade with position like everything else on the stage.
+    for (const points of traces) {
+      for (let index = 1; index < points.length; index += 1) {
+        const from = points[index - 1];
+        const to = points[index];
+        const x = xAt(to, now);
+        const fade = fadeAt(x);
+        if (fade <= 0) continue;
+        context.lineCap = "round";
+        context.lineJoin = "round";
+
+        context.globalAlpha = fade * 0.16;
+        context.strokeStyle = `hsl(${to.hue} 85% 68%)`;
+        context.lineWidth = 11;
+        context.beginPath();
+        context.moveTo(xAt(from, now), from.y);
+        context.lineTo(x, to.y);
+        context.stroke();
+
+        context.globalAlpha = fade * 0.7;
+        context.lineWidth = 2.5;
+        context.beginPath();
+        context.moveTo(xAt(from, now), from.y);
+        context.lineTo(x, to.y);
+        context.stroke();
+      }
+    }
+    context.globalAlpha = 1;
 
     // Restroked every frame: drawn once at spawn, the trail wash erased it
     // within a few frames and the phrase lost its line.
@@ -172,6 +243,13 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
     },
     setGlow(next) {
       glow = next;
+    },
+    setTrace(midi) {
+      tracedMidi = midi;
+      // Releasing closes the stroke instead of clearing it: the ribbon is a
+      // record of what was played, so it has to outlive the gesture and scroll
+      // off with the notes rather than vanish when the pointer lifts.
+      if (midi === null) live = null;
     },
   };
 }
