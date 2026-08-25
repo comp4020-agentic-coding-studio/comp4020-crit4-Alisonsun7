@@ -85,14 +85,48 @@ the layout has settled and then never again, so the drawing was using stale
 dimensions. Writing these down changes what the next attempt starts from,
 instead of leaving the same mistake available to be made again.
 
+### 5. The change that came from playing it, not from reading the code
+
+Once the instrument was finished I sat and played it. Typing sounded good, and
+dragging with the mouse sounded bad. That was my own judgement from listening,
+and nothing in the repository could have told me, because all 29 tests were
+passing at the time.
+
+When I asked why, the reason was that dragging had been built as a separate
+thing from typing rather than as another way into the same instrument. Typing
+used sine and triangle waves and every letter landed on the pentatonic scale.
+Dragging used a sawtooth wave, which carries every harmonic and buzzes, through
+a filter with a strong resonant peak that whistled as the pointer moved, and its
+pitch was fully continuous, so it always sat in the gaps between the scale
+notes. The most interesting part is the last one. A continuous pitch sounds
+acceptable on its own, which is why I had not noticed it earlier, but as soon as
+it is heard next to a typed letter it is out of tune with it. The instrument's
+whole claim is that there is no wrong note, and dragging was the one place where
+that claim was false.
+
+So the fix was to bring dragging under the same rules instead of adjusting it:
+the same wave shapes as the keys, no resonant peak, a lower level because a held
+note that never decays will dominate a phrase, and the same scale. To keep the
+sliding feel I did not make it step between notes, the pitch snaps to the scale
+but glides there over 25 milliseconds, so it still slides. I also added a slow
+shallow vibrato, because a perfectly steady tone sounds like a test signal
+rather than a voice.
+
+I then wrote a test for the rule this established, since it is now a real rule
+and not a preference: it takes 201 positions across the whole drag range and
+asserts that every snapped pitch is a degree of the scale and stays in range.
+This is the one part of the spec's "no way to play it wrong" that a machine can
+hold for the drag as well as the keys, and it only exists because I played the
+build and disliked what I heard.
+
+Cited: [`529ac82`](https://github.com/comp4020-agentic-coding-studio/comp4020-crit4-Alisonsun7/commit/529ac82)
+— the drag voice rebuilt, the snapping added to the tuning, and the test that
+holds it.
+
 ## What I know is still open
 
-The parts of the spec that no test can hold are latency, whether playing it
-feels expressive rather than tiring, and whether music emerges for someone with
-no instructions. Those are judged by playing it.
-
-
-/comp4020:ship
-
-
-
+The parts of the spec that no test can hold are latency and whether music
+emerges for someone with no instructions. I have now played the finished build
+myself, which is where the change above came from, but I have not watched
+somebody else play it without being told anything, and that is the part I expect
+to learn most from at the crit.

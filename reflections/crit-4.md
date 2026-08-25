@@ -25,6 +25,23 @@ vowels and consonants are voiced separately. Because English alternates vowels
 and consonants naturally, a typed word then arrived with a shape already in it.
 No test would have found this problem, and I only found it by listening.
 
+C. The third breakthrough only happened because I stopped working on the code
+and played the finished instrument instead. Typing sounded good to me, and
+dragging with the mouse sounded bad. I could hear that clearly, but I could not
+say why, and no test could tell me either, because all 29 of them were passing
+at the time. When I asked about it, the reason was that dragging had been built
+as a separate instrument instead of another way into the same one. It used a
+harsher waveform, it had a resonant filter that whistled as I moved the mouse,
+and its pitch was completely continuous, so it always landed between the notes
+of the scale that the letters use. A continuous pitch sounds acceptable when you
+only hear it by itself, which is why I had not noticed it before, but next to a
+typed letter it is out of tune. The instrument's whole claim is that there is no
+wrong note, and dragging turned out to be the one place where that claim was not
+true. The fix was to put dragging under the same rules as the keys rather than to
+adjust its settings, and to keep the sliding feel by letting the pitch glide into
+each note instead of stepping to it. I then wrote a test for that rule, because
+by then it was a rule and not a preference.
+
 **What did this work change about who I want to be as a software developer?**
 
 In Crit 1 I wrote that I was uneasy about letting Claude execute and modify code
@@ -34,13 +51,15 @@ that the checks I ask the agent to write are not the same thing as the work bein
 correct, and that I have to inspect the result with my own eyes and ears before I
 believe it.
 
-Two things this week made that concrete. The visual part of the instrument was
+Three things this week made that concrete. The visual part of the instrument was
 drawing pitch along the horizontal axis, so every phrase was drawn as a flat
-line and there was no shape to see. All the tests still passed. Later I asked
+line and there was no shape to see. All the tests still passed. Then I asked
 whether two local preview URLs were serving the same files, and it turned out
 that the copy I had been opening in my browser was an older build that did not
-contain the most recent fix. In both cases the automated checks were green and
-the thing in front of me was still wrong.
+contain the most recent fix, which means I had been judging the wrong version.
+The clearest case was the drag sounding wrong. In all three the automated checks
+were green and the thing in front of me was still wrong, and in the third one
+the only instrument that could detect the problem was my own ear.
 
 So the developer I want to be is one who treats a green check as the beginning
 of verification rather than the end of it. I also want to be more careful about
