@@ -53,6 +53,21 @@ debugging the same thing again.
   `base: "/comp4020-crit4-Alisonsun7/"` in `astro.config.mjs`. Get it wrong and
   the site looks perfect locally while every asset 404s on the live URL. Commit
   the updated `pnpm-lock.yaml` too --- CI installs with `--frozen-lockfile`.
+- **A link checker pointed at `dist/` is wrong once `base` is set.** Astro bakes
+  the project path into every absolute URL, so crawling `dist/` as the server
+  root looks for `dist/<base>/_astro/...` and reports every asset broken on a
+  site that deploys perfectly. That reddened CI on a commit whose local
+  `pnpm check` was green, because the check only existed in the workflow. Fixed
+  by `scripts/check-links.mjs`, wired into `pnpm check`: it stages `dist` *under*
+  the base so the crawl root matches the Pages origin. Two traps inside that —
+  linkinator resolves its LOCATION glob **relative to `--server-root`**, not to
+  the cwd, and without `--server-root` it roots the server at the crawled file's
+  own directory and doubles the base. And staging alone proves nothing about
+  whether the base is *correct*: stage and build read the same config, so they
+  agree with each other while the live site 404s. I set the base to nonsense and
+  watched the crawl still pass. The base is therefore asserted against the git
+  remote's repo name — an independent source of truth is the whole point of the
+  check.
 - **An `AudioContext` built before a user gesture is born suspended.** Build it
   lazily *inside* the first keydown or pointerdown handler, not at module load,
   or the first press only unlocks audio and makes no sound. For this crit that

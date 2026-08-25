@@ -24,3 +24,6 @@ mise.local.toml
 # `astro dev` writes this one; the rest of .astro/ ships with the template and
 # stays tracked, so ignore the file rather than the directory.
 .astro/dev.json
+
+# Staging dir the link check builds and removes each run.
+.link-check/

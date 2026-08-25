@@ -8,8 +8,9 @@
     "build": "astro build",
     "preview": "astro preview",
     "typecheck": "astro check",
-    "check": "pnpm typecheck && pnpm build && oxlint --ignore-path .gitignore && stylelint \"**/*.css\" --ignore-path .gitignore --allow-empty-input && vitest run",
+    "check": "pnpm typecheck && pnpm build && oxlint --ignore-path .gitignore && stylelint \"**/*.css\" --ignore-path .gitignore --allow-empty-input && vitest run && pnpm check:links",
     "check:evidence": "node scripts/check-evidence.ts",
+    "check:links": "node scripts/check-links.mjs",
     "test": "vitest run"
   },
   "devDependencies": {
