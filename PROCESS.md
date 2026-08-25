@@ -6,28 +6,36 @@ I built a browser instrument played by typing, clicking, dragging, or touching. 
 
 ## How I checked the brief
 
-`spec/crit-4.test.ts` checks the parts that can be automated: every letter plays, pitches stay in one scale, punctuation is silent, spaces rest, no recorded audio ships, the first gesture can start audio, touch does not scroll, and pointer pitches use the same scale.
-
-The rest had to be checked by playing. I kept asking two questions: can someone make a first sound without explanation, and do all inputs feel like the same instrument?
+I split verification into what tests could prove and what had to be experienced. `spec/crit-4.test.ts` checks mappings, scale membership, rests, silence for punctuation, absence of recorded audio, touch behaviour, and pointer pitches. I then played the deployed interaction to judge the parts the tests could not: whether the first gesture makes sense, whether words sound musical, and whether keyboard and pointer play feel like one instrument.
 
 ## The moments that mattered
 
-### 1. When passing tests were not enough
+### 1. Grounding the build before generating it
 
-The first complete build passed its tests but did not sound musical. Letters `a–z` formed one rising ramp, so valid notes still made ordinary words jump across too wide a range. I asked Claude for a musical redesign rather than a bug fix, producing two narrower ranges: vowels below and consonants above.
+I carried forward the useful parts of my earlier `CLAUDE.md` rather than starting from a blank harness, including the Astro base-path rule needed for GitHub Pages. I also changed my original request to reproduce Typatone and Patatap after Claude raised the authorship problem. Instead, I used them as references and wrote down the principles I wanted to keep without taking their code, sounds, or visual identity. This gave the agent clearer constraints before the instrument was built.
 
-The visual feedback exposed the same problem. Pitch was originally horizontal, so phrases looked flat. Moving pitch vertically made the drawing reflect what I could hear.
+[`51e772e`](https://github.com/comp4020-agentic-coding-studio/comp4020-crit4-Alisonsun7/commit/51e772e) · [`7775771`](https://github.com/comp4020-agentic-coding-studio/comp4020-crit4-Alisonsun7/commit/7775771)
+
+### 2. Rejecting a build that passed its tests
+
+The first complete version was mechanically correct but did not sound musical. Letters `a–z` formed one wide rising ramp, so every pitch was valid while ordinary words jumped across too much range. I asked Claude to redesign the musical mapping rather than search for a bug. Splitting vowels and consonants into two narrower ranges made words sound more coherent when I played them.
+
+The visual result exposed the same limit of automated checking: pitch was horizontal, so phrases looked flat. Moving pitch to the vertical axis made the score reflect the contour I could hear.
 
 [`7775771`](https://github.com/comp4020-agentic-coding-studio/comp4020-crit4-Alisonsun7/commit/7775771)
 
-### 2. Making pointer play belong to the same instrument
+### 3. Making pointer play obey the same musical rules
 
-Typing worked, but dragging initially felt like a different instrument: its timbre was harsher and its continuous pitch could fall between the keyboard notes. I brought it under the same rules by snapping it to the scale, softening the voice, and adding only a short glide.
+Once typing worked, dragging still felt like a separate instrument. Its voice was harsher and continuous pitch could fall between the notes available to the keyboard, undermining the idea that there is no wrong input. I corrected the interaction rather than treating pointer play as an extra effect: drag now snaps to the same scale, uses a softer voice, and keeps only a short glide.
 
-I then corrected the visual side for the same reason. Dragging originally disappeared as a temporary glow, while typing left a persistent score. The final ribbon records pointer play in the same pitch-and-time space as typed notes.
+I verified it by playing both input modes back-to-back, while the spec test samples pointer positions to check that the pitch never leaves the scale. This gave human judgement and automated checking different jobs: listening judged whether the interaction felt coherent; the test guarded the rule that every generated pitch remained valid.
 
-[`529ac82`](https://github.com/comp4020-agentic-coding-studio/comp4020-crit4-Alisonsun7/commit/529ac82) · [`0f62eea`](https://github.com/comp4020-agentic-coding-studio/comp4020-crit4-Alisonsun7/commit/0f62eea)
+[`529ac82`](https://github.com/comp4020-agentic-coding-studio/comp4020-crit4-Alisonsun7/commit/529ac82)
 
-## Still open
+### 4. Giving pointer play the same visual consequence
 
-I have verified the current build by playing it myself, but I still need to observe whether a stranger can discover both typing and dragging without explanation.
+The sound was now coherent, but playing revealed another mismatch: typed notes remained as a visible score while drag gestures disappeared as a temporary glow. The process write-up made this inconsistency obvious. I changed the visual model so pointer play leaves a persistent ribbon in the same score space as typed notes.
+
+The ribbon is sampled by the drawing loop rather than only on pointer movement, because holding a note still counts as playing. This made typing and dragging feel like different gestures inside one instrument rather than separate features, and gave both the same lasting visual consequence.
+
+[`0f62eea`](https://github.com/comp4020-agentic-coding-studio/comp4020-crit4-Alisonsun7/commit/0f62eea)
